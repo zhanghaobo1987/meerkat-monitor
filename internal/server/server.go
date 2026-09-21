@@ -14,6 +14,9 @@ import (
 	"time"
 )
 
+// installPlaceholder 是 install.sh 中用于注入面板地址的占位符。
+const installPlaceholder = `__MEERKAT_PANEL_HOST__`
+
 //go:embed web_dist
 var webFS embed.FS
 
@@ -90,8 +93,7 @@ func (s *Server) Run(ctx context.Context) error {
 			return
 		}
 		if p == "/install.sh" {
-			w.Header().Set("Content-Type", "text/x-shellscript; charset=utf-8")
-			http.ServeFileFS(w, r, dist, "install.sh")
+			s.serveInstallScript(w, r, dist)
 			return
 		}
 		if p == "/admin" || p == "/admin/" {
@@ -150,6 +152,33 @@ func (s *Server) pruneLoop(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// serveInstallScript 分发安装脚本，自动将面板地址注入到脚本中。
+// 这样用户只需 curl ... | bash -s -- -t <令牌>，无需手动传 -e。
+func (s *Server) serveInstallScript(w http.ResponseWriter, r *http.Request, dist fs.FS) {
+	raw, err := fs.ReadFile(dist, "install.sh")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	// 根据请求构造面板地址（优先 X-Forwarded-Proto/Host，兼容反代）
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	if xfp := r.Header.Get("X-Forwarded-Proto"); xfp != "" {
+		scheme = xfp
+	}
+	host := r.Host
+	if xfh := r.Header.Get("X-Forwarded-Host"); xfh != "" {
+		host = xfh
+	}
+	panelURL := scheme + "://" + host
+	out := strings.Replace(string(raw), installPlaceholder, panelURL, 1)
+	w.Header().Set("Content-Type", "text/x-shellscript; charset=utf-8")
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(out)))
+	_, _ = w.Write([]byte(out))
 }
 
 // downloadNameRe 限制可下载文件名，防目录穿越。

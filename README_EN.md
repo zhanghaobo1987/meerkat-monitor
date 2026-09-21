@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'a5515018-e306-477b-b986-e400b1ba1696'
-  PropagateID: 'a5515018-e306-477b-b986-e400b1ba1696'
-  ReservedCode1: 'd4a058cc-f0d2-47bb-a1e2-46c11aa24bb9'
-  ReservedCode2: 'd4a058cc-f0d2-47bb-a1e2-46c11aa24bb9'
+  ProduceID: '3e10fe55-e2e4-474a-8cc9-49d1f58bd0d4'
+  PropagateID: '3e10fe55-e2e4-474a-8cc9-49d1f58bd0d4'
+  ReservedCode1: 'a1585fea-05f9-4c4f-a17e-850771f2fed4'
+  ReservedCode2: 'a1585fea-05f9-4c4f-a17e-850771f2fed4'
 ---
 
 # Meerkat
@@ -60,19 +60,23 @@ On first start, a random admin password is printed to the log (username: `admin`
 ### Enroll a server & install the agent
 
 1. Open **Admin → Servers → Add server**, copy the enrollment token
-2. Run the install command shown in the panel on the target host:
+2. Run the install command shown in the panel on the target host (panel URL is auto-injected):
 
 ```bash
-curl -fsSL http://<your-panel-host>:8080/install.sh | bash -s -- \
-  -e http://<your-panel-host>:8080 -t <token>
+curl -fsSL http://<your-panel-host>:8080/install.sh | bash -s -- -t <token>
 ```
 
 The script detects platform/arch, downloads the matching release, and registers a persistent `systemd` (Linux) or `launchd` (macOS) service.
 
+> If you obtained the script elsewhere (e.g. downloaded from GitHub), specify the panel URL manually:
+> ```bash
+> install.sh -e http://<panel-host>:8080 -t <token>
+> ```
+
 #### One-line install on Ubuntu
 
 ```bash
-curl -fsSL http://<panel-host>:8080/install.sh | bash -s -- -e http://<panel-host>:8080 -t <token>
+curl -fsSL http://<panel-host>:8080/install.sh | bash -s -- -t <token>
 ```
 
 Works on Ubuntu 20.04 / 22.04 / 24.04, both amd64 and arm64. The script:
@@ -123,17 +127,6 @@ curl -fL -H "Authorization: Bearer $TOKEN" -H "Accept: application/octet-stream"
 ```
 
 After that, every Ubuntu/Debian/CentOS host can install **fully offline** with the one-line command above. Add `meerkat_linux_arm64`, `meerkat_darwin_arm64`, etc. as needed.
-
-#### Fallback: GitHub Releases
-
-If the repo is **private**, release assets require authentication — export a PAT before running the installer:
-
-```bash
-export MEERKAT_GH_TOKEN=<your GitHub PAT>
-curl -fsSL http://<panel-host>:8080/install.sh | bash -s -- -e http://<panel-host>:8080 -t <token>
-```
-
-No token is needed once the repo is public.
 
 ### Run the agent manually
 

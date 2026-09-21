@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'd294aab4-7a44-41cb-9a85-eb7e392a5234'
-  PropagateID: 'd294aab4-7a44-41cb-9a85-eb7e392a5234'
-  ReservedCode1: 'c6367991-71ed-443f-a507-7491fe11222e'
-  ReservedCode2: 'c6367991-71ed-443f-a507-7491fe11222e'
+  ProduceID: '915ad6ba-7b83-4545-b4c1-a9e6f5653c4b'
+  PropagateID: '915ad6ba-7b83-4545-b4c1-a9e6f5653c4b'
+  ReservedCode1: '5e73850a-8f10-4b53-b645-88d444b5c83f'
+  ReservedCode2: '5e73850a-8f10-4b53-b645-88d444b5c83f'
 ---
 
 # Meerkat
@@ -60,19 +60,23 @@ docker compose up -d
 ### 添加服务器并安装 Agent
 
 1. 进入 **管理后台 → 服务器列表 → 添加服务器**，得到接入令牌
-2. 在目标服务器上执行面板给出的安装命令（也可手动运行）：
+2. 在目标服务器上执行（面板地址已自动注入，只需提供令牌）：
 
 ```bash
-curl -fsSL http://<your-panel-host>:8080/install.sh | bash -s -- \
-  -e http://<your-panel-host>:8080 -t <接入令牌>
+curl -fsSL http://<your-panel-host>:8080/install.sh | bash -s -- -t <接入令牌>
 ```
 
 脚本会自动识别平台与架构、下载对应版本，并注册为 `systemd`（Linux）或 `launchd`（macOS）常驻服务。
 
+> 如果从其他途径获取了安装脚本（如直接从 GitHub 下载），需手动指定面板地址：
+> ```bash
+> install.sh -e http://<面板地址>:8080 -t <接入令牌>
+> ```
+
 #### 在 Ubuntu 上安装（一条命令）
 
 ```bash
-curl -fsSL http://<面板地址>:8080/install.sh | bash -s -- -e http://<面板地址>:8080 -t <接入令牌>
+curl -fsSL http://<面板地址>:8080/install.sh | bash -s -- -t <接入令牌>
 ```
 
 适用于 Ubuntu 20.04 / 22.04 / 24.04（amd64 与 arm64 均可）。脚本会依次完成：
@@ -123,17 +127,6 @@ curl -fL -H "Authorization: Bearer $TOKEN" -H "Accept: application/octet-stream"
 ```
 
 放置后，所有 Ubuntu/Debian/CentOS 服务器执行上面的安装命令即可**完全不依赖 GitHub** 完成安装。同理可放置 `meerkat_linux_arm64`、`meerkat_darwin_arm64` 等其他平台。
-
-#### 从 GitHub Release 下载（面板未放置二进制时的回退）
-
-仓库为**私有**时，Release 资产需要认证下载，在安装命令前带上 PAT 即可：
-
-```bash
-export MEERKAT_GH_TOKEN=<你的GitHub PAT>
-curl -fsSL http://<面板地址>:8080/install.sh | bash -s -- -e http://<面板地址>:8080 -t <接入令牌>
-```
-
-仓库转公开后则无需任何 Token。
 
 ### 手动运行 Agent
 

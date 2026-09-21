@@ -151,12 +151,12 @@ function showCreatedPanel() {
   $("#srvCreated").style.display = "";
   $("#newToken").textContent = createdToken || "";
   const ep = location.origin;
-  const cmd = `curl -fsSL ${ep}/install.sh | bash -s -- -e ${ep} -t ${createdToken || "<令牌>"}`;
+  const cmd = `curl -fsSL ${ep}/install.sh | bash -s -- -t ${createdToken || "<令牌>"}`;
   $("#agentRunCmd").textContent = cmd;
   $("#agentInstallCmd").textContent =
-    `# Ubuntu / Debian / CentOS（自动检测平台、下载 Agent、注册 systemd 服务）\n${cmd}\n\n` +
-    `# 说明：脚本优先从本面板下载 Agent 二进制（放置方法见 README「Agent 二进制直传」），\n` +
-    `#       未放置时回退 GitHub Release（私有仓库需加 MEERKAT_GH_TOKEN=<你的PAT>）`;
+    `# Ubuntu / Debian / CentOS（自动检测面板地址，无需手动指定）\n${cmd}\n\n` +
+    `# 脚本从本面板下载安装脚本时已自动注入面板地址，\n` +
+    `# 只需提供接入令牌即可完成安装`;
 }
 $("#btnAdd").addEventListener("click", () => openSrvModal(null));
 $("#srvClose").addEventListener("click", () => $("#srvMask").classList.remove("show"));
