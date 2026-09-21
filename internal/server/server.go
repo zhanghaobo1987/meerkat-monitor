@@ -7,6 +7,9 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -67,6 +70,12 @@ func (s *Server) Run(ctx context.Context) error {
 	}))
 	mux.HandleFunc("/api/admin/settings", s.api.requireAdmin(s.api.handleAdminSettings))
 	mux.HandleFunc("/api/admin/password", s.api.requireAdmin(s.api.handleAdminPassword))
+
+	// Agent 二进制直传分发（离线安装：文件放在数据目录 agents/ 下）
+	agentsDir := filepath.Join(filepath.Dir(s.dbPath), "agents")
+	mux.HandleFunc("/download/", func(w http.ResponseWriter, r *http.Request) {
+		s.serveAgentBinary(w, r, agentsDir)
+	})
 
 	// 静态面板
 	dist, err := fs.Sub(webFS, "web_dist")
@@ -141,6 +150,33 @@ func (s *Server) pruneLoop(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// downloadNameRe 限制可下载文件名，防目录穿越。
+var downloadNameRe = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$`)
+
+// serveAgentBinary 从数据目录 agents/ 下分发 Agent 二进制。
+// 文件命名约定: meerkat_<goos>_<goarch>，例如 meerkat_linux_amd64。
+// 未放置任何文件时返回 404，安装脚本会自动回退 GitHub Release。
+func (s *Server) serveAgentBinary(w http.ResponseWriter, r *http.Request, dir string) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		errJSON(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	name := strings.TrimPrefix(r.URL.Path, "/download/")
+	if !downloadNameRe.MatchString(name) || strings.Contains(name, "..") {
+		http.NotFound(w, r)
+		return
+	}
+	path := filepath.Join(dir, name)
+	fi, err := os.Stat(path)
+	if err != nil || fi.IsDir() {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", `attachment; filename="`+name+`"`)
+	http.ServeFile(w, r, path)
 }
 
 func withCommonHeaders(next http.Handler) http.Handler {

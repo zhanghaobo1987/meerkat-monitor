@@ -1,3 +1,14 @@
+---
+AIGC:
+  ContentProducer: '001191110102MAD55U9H0F10002'
+  ContentPropagator: '001191110102MAD55U9H0F10002'
+  Label: '1'
+  ProduceID: 'dc357616-c7d8-44ec-8319-9fe59d26b19d'
+  PropagateID: 'dc357616-c7d8-44ec-8319-9fe59d26b19d'
+  ReservedCode1: 'a30c9ea3-3902-434b-970e-557219822557'
+  ReservedCode2: 'a30c9ea3-3902-434b-970e-557219822557'
+---
+
 # Meerkat
 
 English | [简体中文](README.md)
@@ -32,8 +43,8 @@ English | [简体中文](README.md)
 ### Server via Docker
 
 ```bash
-git clone https://github.com/meerkat-monitor/meerkat.git
-cd meerkat
+git clone https://github.com/zhanghaobo1987/meerkat-monitor.git
+cd meerkat-monitor
 docker compose up -d
 ```
 
@@ -57,6 +68,61 @@ curl -fsSL http://<your-panel-host>:8080/install.sh | bash -s -- \
 ```
 
 The script detects platform/arch, downloads the matching release, and registers a persistent `systemd` (Linux) or `launchd` (macOS) service.
+
+#### One-line install on Ubuntu
+
+```bash
+curl -fsSL http://<panel-host>:8080/install.sh | bash -s -- -e http://<panel-host>:8080 -t <token>
+```
+
+Works on Ubuntu 20.04 / 22.04 / 24.04, both amd64 and arm64. The script:
+
+1. Detects the platform (`uname -m` → amd64/arm64)
+2. Downloads the agent binary (panel-served first, see below; falls back to GitHub Releases)
+3. Installs it to `/usr/local/bin/meerkat`
+4. Writes `/etc/meerkat/agent.env` (mode 600)
+5. Registers and starts the `systemd` service `meerkat-agent` (auto-start on boot, auto-restart on crash)
+
+After installation:
+
+```bash
+systemctl status meerkat-agent        # status
+journalctl -u meerkat-agent -f        # live logs
+sudo systemctl restart meerkat-agent  # restart (e.g. after token rotation)
+```
+
+To uninstall:
+
+```bash
+sudo systemctl disable --now meerkat-agent
+sudo rm /etc/systemd/system/meerkat-agent.service /etc/meerkat/agent.env /usr/local/bin/meerkat
+sudo systemctl daemon-reload
+```
+
+#### Agent binary served by the panel (recommended for private repos / offline)
+
+The installer downloads the agent binary **from the panel itself first**, with no GitHub dependency. Place the binaries once on the panel host (under the `agents/` subdirectory next to the database):
+
+```bash
+# With the database at ./data/meerkat.db, put binaries in ./data/agents/
+mkdir -p data/agents
+curl -fL -o /tmp/m.tar.gz \
+  https://github.com/zhanghaobo1987/meerkat-monitor/releases/latest/download/meerkat_linux_amd64.tar.gz
+tar -xzf /tmp/m.tar.gz -C data/agents/    # → data/agents/meerkat_linux_amd64
+```
+
+After that, every Ubuntu/Debian/CentOS host can install **fully offline** with the one-line command above. Add `meerkat_linux_arm64`, `meerkat_darwin_arm64`, etc. as needed.
+
+#### Fallback: GitHub Releases
+
+If the repo is **private**, release assets require authentication — export a PAT before running the installer:
+
+```bash
+export MEERKAT_GH_TOKEN=<your GitHub PAT>
+curl -fsSL http://<panel-host>:8080/install.sh | bash -s -- -e http://<panel-host>:8080 -t <token>
+```
+
+No token is needed once the repo is public.
 
 ### Run the agent manually
 
@@ -108,3 +174,5 @@ Meerkat is a self-hosted monitoring tool. Deploy it only on systems you own or a
 ## License
 
 [MIT](LICENSE)
+
+> AI生成

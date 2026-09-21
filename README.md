@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'c256f1d7-8236-44ca-a023-5a68706f29f8'
-  PropagateID: 'c256f1d7-8236-44ca-a023-5a68706f29f8'
-  ReservedCode1: 'ebfba740-120c-448d-90cf-24eed128b5f4'
-  ReservedCode2: 'ebfba740-120c-448d-90cf-24eed128b5f4'
+  ProduceID: '434d3e0e-48d4-4cf9-b6c1-f8fb34a3fef0'
+  PropagateID: '434d3e0e-48d4-4cf9-b6c1-f8fb34a3fef0'
+  ReservedCode1: 'c8775625-7f9f-4304-b08a-1e87c14e238b'
+  ReservedCode2: 'c8775625-7f9f-4304-b08a-1e87c14e238b'
 ---
 
 # Meerkat
@@ -43,8 +43,8 @@ AIGC:
 ### Docker 部署服务端
 
 ```bash
-git clone https://github.com/meerkat-monitor/meerkat.git
-cd meerkat
+git clone https://github.com/zhanghaobo1987/meerkat-monitor.git
+cd meerkat-monitor
 docker compose up -d
 ```
 
@@ -68,6 +68,62 @@ curl -fsSL http://<your-panel-host>:8080/install.sh | bash -s -- \
 ```
 
 脚本会自动识别平台与架构、下载对应版本，并注册为 `systemd`（Linux）或 `launchd`（macOS）常驻服务。
+
+#### 在 Ubuntu 上安装（一条命令）
+
+```bash
+curl -fsSL http://<面板地址>:8080/install.sh | bash -s -- -e http://<面板地址>:8080 -t <接入令牌>
+```
+
+适用于 Ubuntu 20.04 / 22.04 / 24.04（amd64 与 arm64 均可）。脚本会依次完成：
+
+1. 检测平台架构（`uname -m` → amd64/arm64）
+2. 下载 Agent 二进制（优先面板直传，见下节；失败自动回退 GitHub Release）
+3. 安装到 `/usr/local/bin/meerkat`
+4. 写入 `/etc/meerkat/agent.env`（权限 600）
+5. 注册并启动 `systemd` 服务 `meerkat-agent`（开机自启、崩溃自动重启）
+
+安装完成后：
+
+```bash
+systemctl status meerkat-agent        # 运行状态
+journalctl -u meerkat-agent -f        # 实时日志
+sudo systemctl restart meerkat-agent  # 重启（令牌更换后）
+```
+
+卸载：
+
+```bash
+sudo systemctl disable --now meerkat-agent
+sudo rm /etc/systemd/system/meerkat-agent.service /etc/meerkat/agent.env /usr/local/bin/meerkat
+sudo systemctl daemon-reload
+```
+
+#### Agent 二进制直传（推荐，私有仓库 / 离线环境友好）
+
+安装脚本默认**优先从面板本身下载 Agent 二进制**，不依赖 GitHub。只需在面板服务器上放置一次对应平台的二进制（与数据库同目录的 `agents/` 子目录）：
+
+```bash
+# 面板数据库在 ./data/meerkat.db 时，二进制放在 ./data/agents/
+mkdir -p data/agents
+# 从 GitHub Release 获取 linux amd64 版并解压（也可用任意方式放入）：
+curl -fL -o /tmp/m.tar.gz \
+  https://github.com/zhanghaobo1987/meerkat-monitor/releases/latest/download/meerkat_linux_amd64.tar.gz
+tar -xzf /tmp/m.tar.gz -C data/agents/    # 得到 data/agents/meerkat_linux_amd64
+```
+
+放置后，所有 Ubuntu/Debian/CentOS 服务器执行上面的安装命令即可**完全不依赖 GitHub** 完成安装。同理可放置 `meerkat_linux_arm64`、`meerkat_darwin_arm64` 等其他平台。
+
+#### 从 GitHub Release 下载（面板未放置二进制时的回退）
+
+仓库为**私有**时，Release 资产需要认证下载，在安装命令前带上 PAT 即可：
+
+```bash
+export MEERKAT_GH_TOKEN=<你的GitHub PAT>
+curl -fsSL http://<面板地址>:8080/install.sh | bash -s -- -e http://<面板地址>:8080 -t <接入令牌>
+```
+
+仓库转公开后则无需任何 Token。
 
 ### 手动运行 Agent
 
