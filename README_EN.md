@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'dc357616-c7d8-44ec-8319-9fe59d26b19d'
-  PropagateID: 'dc357616-c7d8-44ec-8319-9fe59d26b19d'
-  ReservedCode1: 'a30c9ea3-3902-434b-970e-557219822557'
-  ReservedCode2: 'a30c9ea3-3902-434b-970e-557219822557'
+  ProduceID: 'a5515018-e306-477b-b986-e400b1ba1696'
+  PropagateID: 'a5515018-e306-477b-b986-e400b1ba1696'
+  ReservedCode1: 'd4a058cc-f0d2-47bb-a1e2-46c11aa24bb9'
+  ReservedCode2: 'd4a058cc-f0d2-47bb-a1e2-46c11aa24bb9'
 ---
 
 # Meerkat
@@ -106,9 +106,20 @@ The installer downloads the agent binary **from the panel itself first**, with n
 ```bash
 # With the database at ./data/meerkat.db, put binaries in ./data/agents/
 mkdir -p data/agents
-curl -fL -o /tmp/m.tar.gz \
-  https://github.com/zhanghaobo1987/meerkat-monitor/releases/latest/download/meerkat_linux_amd64.tar.gz
-tar -xzf /tmp/m.tar.gz -C data/agents/    # → data/agents/meerkat_linux_amd64
+```
+
+Then place the platform binaries there (keep names like `meerkat_linux_amd64`), either way:
+
+- **Option A (simplest)**: log in to GitHub in a browser, download `meerkat_linux_amd64` (raw binary, no extraction) from the [Releases page](https://github.com/zhanghaobo1987/meerkat-monitor/releases), and scp/SFTP it to the panel's `data/agents/`
+- **Option B (CLI)**:
+
+```bash
+TOKEN="<your GitHub PAT>"; REPO="zhanghaobo1987/meerkat-monitor"
+mkdir -p data/agents
+AID=$(curl -fsSL -H "Authorization: Bearer $TOKEN" "https://api.github.com/repos/$REPO/releases/latest" \
+  | sed -n '/"name": "meerkat_linux_amd64",/{x;s/.*"id": \([0-9]*\).*/\1/p;d;}; /"id": /h')
+curl -fL -H "Authorization: Bearer $TOKEN" -H "Accept: application/octet-stream" \
+  -o data/agents/meerkat_linux_amd64 "https://api.github.com/repos/$REPO/releases/assets/$AID"
 ```
 
 After that, every Ubuntu/Debian/CentOS host can install **fully offline** with the one-line command above. Add `meerkat_linux_arm64`, `meerkat_darwin_arm64`, etc. as needed.

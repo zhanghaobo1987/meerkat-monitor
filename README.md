@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '434d3e0e-48d4-4cf9-b6c1-f8fb34a3fef0'
-  PropagateID: '434d3e0e-48d4-4cf9-b6c1-f8fb34a3fef0'
-  ReservedCode1: 'c8775625-7f9f-4304-b08a-1e87c14e238b'
-  ReservedCode2: 'c8775625-7f9f-4304-b08a-1e87c14e238b'
+  ProduceID: 'd294aab4-7a44-41cb-9a85-eb7e392a5234'
+  PropagateID: 'd294aab4-7a44-41cb-9a85-eb7e392a5234'
+  ReservedCode1: 'c6367991-71ed-443f-a507-7491fe11222e'
+  ReservedCode2: 'c6367991-71ed-443f-a507-7491fe11222e'
 ---
 
 # Meerkat
@@ -106,10 +106,20 @@ sudo systemctl daemon-reload
 ```bash
 # 面板数据库在 ./data/meerkat.db 时，二进制放在 ./data/agents/
 mkdir -p data/agents
-# 从 GitHub Release 获取 linux amd64 版并解压（也可用任意方式放入）：
-curl -fL -o /tmp/m.tar.gz \
-  https://github.com/zhanghaobo1987/meerkat-monitor/releases/latest/download/meerkat_linux_amd64.tar.gz
-tar -xzf /tmp/m.tar.gz -C data/agents/    # 得到 data/agents/meerkat_linux_amd64
+```
+
+然后任选一种方式把对应平台的二进制放进去（文件名保持 `meerkat_<os>_<arch>`，如 `meerkat_linux_amd64`）：
+
+- **方式 A（最简单）**：浏览器登录 GitHub 后到 [Release 页面](https://github.com/zhanghaobo1987/meerkat-monitor/releases) 直接下载 `meerkat_linux_amd64`（裸二进制，无需解压），再 scp / SFTP 上传到面板的 `data/agents/`
+- **方式 B（命令行）**：
+
+```bash
+TOKEN="<你的GitHub PAT>"; REPO="zhanghaobo1987/meerkat-monitor"
+mkdir -p data/agents
+AID=$(curl -fsSL -H "Authorization: Bearer $TOKEN" "https://api.github.com/repos/$REPO/releases/latest" \
+  | sed -n '/"name": "meerkat_linux_amd64",/{x;s/.*"id": \([0-9]*\).*/\1/p;d;}; /"id": /h')
+curl -fL -H "Authorization: Bearer $TOKEN" -H "Accept: application/octet-stream" \
+  -o data/agents/meerkat_linux_amd64 "https://api.github.com/repos/$REPO/releases/assets/$AID"
 ```
 
 放置后，所有 Ubuntu/Debian/CentOS 服务器执行上面的安装命令即可**完全不依赖 GitHub** 完成安装。同理可放置 `meerkat_linux_arm64`、`meerkat_darwin_arm64` 等其他平台。
