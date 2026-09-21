@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '3e10fe55-e2e4-474a-8cc9-49d1f58bd0d4'
-  PropagateID: '3e10fe55-e2e4-474a-8cc9-49d1f58bd0d4'
-  ReservedCode1: 'a1585fea-05f9-4c4f-a17e-850771f2fed4'
-  ReservedCode2: 'a1585fea-05f9-4c4f-a17e-850771f2fed4'
+  ProduceID: '133b4750-fe0a-48b0-aadf-98f5c806d7fb'
+  PropagateID: '133b4750-fe0a-48b0-aadf-98f5c806d7fb'
+  ReservedCode1: 'e6a071ba-c75b-46d8-b803-fc1639d63cd4'
+  ReservedCode2: 'e6a071ba-c75b-46d8-b803-fc1639d63cd4'
 ---
 
 # Meerkat
@@ -25,12 +25,17 @@ English | [简体中文](README.md)
 
 - **Real-time monitoring**: agents report every 2 seconds by default; WebSocket pushes updates to the panel instantly
 - **Battery included**: single binary server, SQLite storage, and a zero-dependency, zero-build native JS frontend
-- **Complete metrics**: CPU / memory / swap / disk / network speed & totals / load / TCP·UDP connections / process count / uptime
+- **Complete metrics**: CPU / memory / swap / disk / network speed & totals / load / TCP·UDP connections / process count / uptime / egress IP (IPv4/IPv6 auto-detected)
+- **Billing management**: per-server price, currency, billing cycle (monthly/quarterly/semiannual/yearly), expiry date & countdown
+- **Traffic management**: traffic quota (sum/up/down), used & remaining traffic, automatic monthly reset, live progress bars
+- **Theme system**: upload Komari-format themes (komari-theme.json + dist/); compatible with LuminaPlus and other Komari ecosystem themes
+- **Notifications**: Telegram channel, message templates, offline alerts (per-server toggle + grace period), load rules (CPU/RAM threshold + time ratio + interval), expiry reminders, login alerts, traffic usage alerts (5% steps)
+- **Dashboard**: online stats, DB size, expiry reminders, 24h traffic chart, traffic/CPU/memory rankings
 - **History charts**: minute-level aggregation persisted in SQLite, 30-day retention by default (configurable)
-- **Server management**: token-based enrollment, tags, ordering, token rotation, copy-paste install commands
-- **Secure**: agent tokens stored hashed, HttpOnly admin sessions, bcrypt password hashing
+- **Server management**: token enrollment, groups, regions, tags, private remarks, hidden nodes, ordering, token rotation
+- **Secure**: HttpOnly admin sessions, bcrypt password hashing, zip-slip protection on theme upload
 - **Cross-platform**: Linux / macOS / Windows (amd64 / arm64 / arm), with Docker support
-- **One-line install**: the panel serves an install script; paste one command on any target host (auto-registers systemd / launchd service)
+- **One-line install**: modeled after komari-agent — multi init systems (systemd/OpenRC/procd/launchd/upstart/systemd --user/NixOS hint), GitHub mirror fallback, panel-served offline install, auto-injected panel URL
 
 ## Screenshots
 
@@ -158,10 +163,21 @@ make release-local  # cross-compile all platforms → dist/
    browser ── REST /api/public/* /api/admin/* ──────────────▶  └───────────────┘
 ```
 
-- `internal/model` — wire protocol & shared types
-- `internal/server` — storage / API / realtime hub / embedded assets
-- `internal/agent` — metric collection (gopsutil) & report loop
-- `web_dist` — native HTML/CSS/JS panel, packed via `go:embed`
+- `internal/model` — wire protocol & shared types (incl. Komari-compatible shapes)
+- `internal/server` — storage / API / realtime hub / notification engine / theme system / embedded assets
+- `internal/agent` — metric collection (gopsutil) & report loop (flag set aligned with komari-agent)
+- `web_dist` — native HTML/CSS/JS panel (visitor + sidebar admin), packed via `go:embed`
+
+### Komari-compatible API (for Komari ecosystem themes)
+
+| Endpoint | Description |
+| --- | --- |
+| `GET /api/nodes` | server list (price/billing_cycle/expired_at/traffic_limit + account aggregate) |
+| `GET /api/public` | public site settings |
+| `GET /api/version` | version info |
+| `GET /api/recent/:uuid` | recent reports |
+| `GET /api/records/load` | historical load records |
+| `WS /api/clients` | send `get` / `get <uuid>` to pull live data (Komari pull protocol) |
 
 ## Security Notice
 
@@ -169,10 +185,12 @@ Meerkat is a self-hosted monitoring tool. Deploy it only on systems you own or a
 
 ## Roadmap
 
-- [ ] Alerting (Webhook / Telegram / Email)
+- [x] Notifications (Telegram / offline / load / expiry / traffic / login)
+- [x] Theme system (Komari-format theme upload & switching)
+- [x] Billing & traffic management
 - [ ] Online terminal & file manager
-- [ ] Theme system & theme market
-- [ ] ICMP / TCP port probing
+- [ ] Theme market (one-click install from online catalog)
+- [ ] ICMP / TCP port probing & latency monitoring
 - [ ] Multi-user & read-only share links
 
 ## License

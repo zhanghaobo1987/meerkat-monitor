@@ -4,11 +4,14 @@ package agent
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -25,11 +28,17 @@ import (
 	"github.com/meerkat-monitor/meerkat/internal/model"
 )
 
-// Config Agent 运行配置。
+// Config Agent 运行配置（与 komari-agent 参数集对齐）。
 type Config struct {
-	Endpoint string // 服务端根地址
-	Token    string // 接入令牌
-	Version  string
+	Endpoint          string // 服务端地址（-e / AGENT_ENDPOINT / MEERKAT_ENDPOINT）
+	Token             string // 接入令牌（-t / AGENT_TOKEN / MEERKAT_TOKEN）
+	Interval          int    // 上报间隔秒（-i / AGENT_INTERVAL），0 = 跟随服务端
+	Version           string
+	DisableAutoUpdate bool   // 预留：禁用自动更新
+	IgnoreUnsafeCert  bool   // 忽略不安全证书（-u）
+	IncludeNICs       string // 仅统计指定网卡（逗号分隔）
+	ExcludeNICs       string // 排除指定网卡（逗号分隔）
+	PreferIPVersion   string // 4 / 6
 }
 
 // Agent 一个运行中的采集端。
@@ -43,20 +52,84 @@ type Agent struct {
 	lastTime time.Time
 }
 
+// ParseFlags 解析 agent 子命令参数。
+func ParseFlags(args []string) *Config {
+	fs := flag.NewFlagSet("agent", flag.ExitOnError)
+	cfg := &Config{}
+	fs.StringVar(&cfg.Endpoint, "endpoint", "", "面板地址，如 https://monitor.example.com")
+	fs.StringVar(&cfg.Endpoint, "e", "", "面板地址（简写）")
+	fs.StringVar(&cfg.Token, "token", "", "接入令牌")
+	fs.StringVar(&cfg.Token, "t", "", "接入令牌（简写）")
+	fs.IntVar(&cfg.Interval, "interval", 0, "数据采集间隔（秒），0 = 跟随服务端建议")
+	fs.IntVar(&cfg.Interval, "i", 0, "数据采集间隔（秒，简写）")
+	fs.BoolVar(&cfg.DisableAutoUpdate, "disable-auto-update", false, "禁用自动更新（预留）")
+	fs.BoolVar(&cfg.IgnoreUnsafeCert, "ignore-unsafe-cert", false, "忽略不安全证书")
+	fs.BoolVar(&cfg.IgnoreUnsafeCert, "u", false, "忽略不安全证书（简写）")
+	fs.StringVar(&cfg.IncludeNICs, "include-nics", "", "仅统计指定网卡，逗号分隔")
+	fs.StringVar(&cfg.ExcludeNICs, "exclude-nics", "", "排除指定网卡，逗号分隔")
+	fs.StringVar(&cfg.PreferIPVersion, "prefer-ip-version", "", "优先使用 IP 版本：4 或 6")
+	_ = fs.Parse(args)
+	return cfg
+}
+
+// FromEnv 用环境变量补全未设置的字段。
+func FromEnv(cfg *Config) *Config {
+	env := func(keys ...string) string {
+		for _, k := range keys {
+			if v := os.Getenv(k); v != "" {
+				return v
+			}
+		}
+		return ""
+	}
+	if cfg.Endpoint == "" {
+		cfg.Endpoint = env("MEERKAT_ENDPOINT", "AGENT_ENDPOINT")
+	}
+	if cfg.Token == "" {
+		cfg.Token = env("MEERKAT_TOKEN", "AGENT_TOKEN")
+	}
+	if cfg.Interval == 0 {
+		if v := env("MEERKAT_INTERVAL", "AGENT_INTERVAL"); v != "" {
+			n := 0
+			for _, c := range v {
+				if c < '0' || c > '9' {
+					n = 0
+					break
+				}
+				n = n*10 + int(c-'0')
+			}
+			cfg.Interval = n
+		}
+	}
+	return cfg
+}
+
 // Run 阻塞运行 Agent，直到 ctx 取消。
 func Run(ctx context.Context, cfg Config) error {
-	a := &Agent{
-		cfg: cfg,
-		cli: &http.Client{Timeout: 10 * time.Second},
-	}
 	if !strings.HasPrefix(cfg.Endpoint, "http://") && !strings.HasPrefix(cfg.Endpoint, "https://") {
 		cfg.Endpoint = "https://" + cfg.Endpoint
 	}
-	a.cfg.Endpoint = strings.TrimRight(cfg.Endpoint, "/")
+	cfg.Endpoint = strings.TrimRight(cfg.Endpoint, "/")
+
+	if cfg.Endpoint == "https://" || cfg.Token == "" {
+		return fmt.Errorf("必须提供 -endpoint 与 -token（或环境变量 MEERKAT_ENDPOINT / MEERKAT_TOKEN）")
+	}
+
+	transport := &http.Transport{}
+	if cfg.IgnoreUnsafeCert {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // 用户显式要求
+	}
+	a := &Agent{
+		cfg: cfg,
+		cli: &http.Client{Timeout: 10 * time.Second, Transport: transport},
+	}
 
 	interval := time.Duration(2) * time.Second
+	if cfg.Interval > 0 {
+		interval = time.Duration(cfg.Interval) * time.Second
+	}
 	first := true
-	log.Printf("[agent] 启动: endpoint=%s version=%s", a.cfg.Endpoint, cfg.Version)
+	log.Printf("[agent] 启动: endpoint=%s version=%s interval=%s", a.cfg.Endpoint, cfg.Version, interval)
 
 	for {
 		report := a.collect()
@@ -65,7 +138,8 @@ func Run(ctx context.Context, cfg Config) error {
 			if first {
 				log.Printf("[agent] 首次上报失败: %v（将自动重试）", err)
 			}
-		} else if resp.Interval > 0 {
+		} else if resp.Interval > 0 && cfg.Interval == 0 {
+			// 未显式指定间隔时，跟随服务端建议
 			interval = time.Duration(resp.Interval) * time.Second
 		}
 		first = false
@@ -84,7 +158,7 @@ func (a *Agent) collect() *model.Report {
 	r := &model.Report{}
 	now := time.Now()
 
-	// CPU 使用率：与上一轮采样差分
+	// CPU 使用率
 	cpuPct, err := cpu.Percent(0, false)
 	if err == nil && len(cpuPct) > 0 {
 		r.CPUUsage = round1(cpuPct[0])
@@ -114,9 +188,21 @@ func (a *Agent) collect() *model.Report {
 		}
 	}
 
-	// 网络累计与速率
-	if io, err := gnet.IOCounters(false); err == nil && len(io) > 0 {
-		totalIn, totalOut := io[0].BytesRecv, io[0].BytesSent
+	// 网络：按 include/exclude 过滤网卡后聚合
+	if counters, err := gnet.IOCounters(true); err == nil {
+		include := splitSet(a.cfg.IncludeNICs)
+		exclude := splitSet(a.cfg.ExcludeNICs)
+		var totalIn, totalOut uint64
+		for _, c := range counters {
+			if len(include) > 0 && !include[c.Name] {
+				continue
+			}
+			if exclude[c.Name] || isVirtualNIC(c.Name) {
+				continue
+			}
+			totalIn += c.BytesRecv
+			totalOut += c.BytesSent
+		}
 		a.mu.Lock()
 		if !a.lastTime.IsZero() {
 			dt := now.Sub(a.lastTime).Seconds()
@@ -137,6 +223,7 @@ func (a *Agent) collect() *model.Report {
 	if uconns, err := gnet.Connections("udp"); err == nil {
 		r.UDPConns = len(uconns)
 	}
+
 	// 进程数
 	if procs, err := process.Pids(); err == nil {
 		r.ProcCount = len(procs)
@@ -145,11 +232,11 @@ func (a *Agent) collect() *model.Report {
 	// 系统信息
 	if info, err := host.Info(); err == nil {
 		r.Uptime = info.Uptime
-		r.OS = info.OS
-		r.Platform = info.Platform
-		r.KernelVer = info.KernelArch
+		r.AgentInfo.OS = info.OS
+		r.AgentInfo.Platform = info.Platform
+		r.AgentInfo.KernelVer = info.KernelArch
 		if info.PlatformVersion != "" {
-			r.Platform = info.Platform + " " + info.PlatformVersion
+			r.AgentInfo.Platform = info.Platform + " " + info.PlatformVersion
 		}
 	}
 	r.Arch = runtime.GOARCH
@@ -162,6 +249,31 @@ func (a *Agent) collect() *model.Report {
 	r.Virt = detectVirt()
 	r.Version = a.cfg.Version
 	return r
+}
+
+// splitSet 将逗号分隔字符串转为集合。
+func splitSet(s string) map[string]bool {
+	out := map[string]bool{}
+	if s == "" {
+		return out
+	}
+	for _, part := range strings.Split(s, ",") {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			out[part] = true
+		}
+	}
+	return out
+}
+
+// isVirtualNIC 过滤虚拟/回环网卡。
+func isVirtualNIC(name string) bool {
+	for _, p := range []string{"lo", "docker", "veth", "br-", "vmnet", "utun", "tun", "tap", "virbr", "vbr", "wg"} {
+		if strings.HasPrefix(name, p) {
+			return true
+		}
+	}
+	return false
 }
 
 func isRootLike(mp string) bool {

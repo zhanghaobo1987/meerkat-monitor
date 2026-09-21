@@ -104,32 +104,14 @@ func runServer(args []string) {
 }
 
 func runAgent(args []string) {
-	fs := flag.NewFlagSet("agent", flag.ExitOnError)
-	endpoint := fs.String("endpoint", "", "服务端地址，如 https://monitor.example.com")
-	token := fs.String("token", "", "服务器接入令牌")
-	_ = fs.Parse(args)
-
-	cfg := agent.Config{
-		Endpoint: *endpoint,
-		Token:    *token,
-		Version:  version,
-		// 允许环境变量覆盖，便于 Docker/systemd 部署
+	cfg := agent.FromEnv(agent.ParseFlags(args))
+	if cfg.Version == "" {
+		cfg.Version = version
 	}
-	if cfg.Endpoint == "" {
-		cfg.Endpoint = os.Getenv("MEERKAT_ENDPOINT")
-	}
-	if cfg.Token == "" {
-		cfg.Token = os.Getenv("MEERKAT_TOKEN")
-	}
-	if cfg.Endpoint == "" || cfg.Token == "" {
-		fmt.Fprintln(os.Stderr, "必须提供 -endpoint 与 -token（或环境变量 MEERKAT_ENDPOINT / MEERKAT_TOKEN）")
-		os.Exit(1)
-	}
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := agent.Run(ctx, cfg); err != nil {
+	if err := agent.Run(ctx, *cfg); err != nil {
 		log.Fatalf("Agent 退出: %v", err)
 	}
 }

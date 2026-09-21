@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '915ad6ba-7b83-4545-b4c1-a9e6f5653c4b'
-  PropagateID: '915ad6ba-7b83-4545-b4c1-a9e6f5653c4b'
-  ReservedCode1: '5e73850a-8f10-4b53-b645-88d444b5c83f'
-  ReservedCode2: '5e73850a-8f10-4b53-b645-88d444b5c83f'
+  ProduceID: '8910bf06-3d68-423f-ab47-c05e29198d55'
+  PropagateID: '8910bf06-3d68-423f-ab47-c05e29198d55'
+  ReservedCode1: 'b21b7cf3-891e-43c5-9d75-cc920ffed627'
+  ReservedCode2: 'b21b7cf3-891e-43c5-9d75-cc920ffed627'
 ---
 
 # Meerkat
@@ -25,12 +25,17 @@ AIGC:
 
 - **实时监控**：Agent 默认每 2 秒上报一次，WebSocket 秒级推送到面板
 - **开箱即用**：服务端单二进制、SQLite 存储、前端原生 JS 零依赖零构建
-- **指标完整**：CPU / 内存 / Swap / 磁盘 / 网络速率与累计流量 / 负载 / TCP·UDP 连接数 / 进程数 / 运行时长
+- **指标完整**：CPU / 内存 / Swap / 磁盘 / 网络速率与累计流量 / 负载 / TCP·UDP 连接数 / 进程数 / 运行时长 / 出口 IP（IPv4/IPv6 自动检测）
+- **账单管理**：每台服务器支持费用、货币、费用周期（月/季/半年/年）、到期时间与到期倒计时
+- **流量管理**：总流量额度（上下行合计/仅上行/仅下行）、已用流量、剩余流量，按月自动统计并重置，卡片实时进度条
+- **主题系统**：支持上传 Komari 格式主题（komari-theme.json + dist/），兼容 LuminaPlus 等 Komari 生态主题，一键切换前台外观
+- **通知系统**：Telegram 渠道、消息模板（{{emoji}}/{{event}}/{{client}}）、离线通知（每台独立开关+宽限期）、负载通知规则（CPU/RAM 阈值+时间占比+间隔）、到期提醒、登录通知、流量用量告警（5% 梯度）
+- **仪表盘**：在线统计、数据库占用、到期提醒、24h 流量走势、流量/CPU/内存排行
 - **历史图表**：分钟级聚合落库，默认保留 30 天（可配置），24 小时走势一目了然
-- **多服务器管理**：令牌接入、标签分组、排序、重置令牌、一键复制安装命令
-- **安全**：Agent 令牌哈希落库、管理端 HttpOnly 会话、bcrypt 密码哈希
+- **多服务器管理**：令牌接入、分组、地区、标签、私有备注、隐藏节点、拖动排序、重置令牌
+- **安全**：管理端 HttpOnly 会话、bcrypt 密码哈希、ZIP 上传防目录穿越
 - **跨平台**：Linux / macOS / Windows（amd64 / arm64 / arm），支持 Docker
-- **一键安装**：面板内置安装脚本分发，复制命令即可在目标机完成 Agent 部署（systemd / launchd 自动注册）
+- **一键安装**：参考 komari-agent 设计——多 init 系统（systemd/OpenRC/procd/launchd/upstart/systemd --user/NixOS 提示）、GitHub 镜像自动回退、面板直传离线安装、面板地址自动注入
 
 ## 截图
 
@@ -158,10 +163,21 @@ make release-local  # 本地交叉编译全部平台 → dist/
         浏览器 ── REST /api/public/* /api/admin/* ──────────▶  └───────────────┘
 ```
 
-- `internal/model` — 通信协议与数据结构
-- `internal/server` — 存储层 / API / 实时 Hub / 静态资源嵌入
-- `internal/agent` — 指标采集（gopsutil）与上报循环
-- `web_dist` — 原生 HTML/CSS/JS 面板，`go:embed` 打包进二进制
+- `internal/model` — 通信协议与数据结构（含 Komari 兼容结构）
+- `internal/server` — 存储层 / API / 实时 Hub / 通知引擎 / 主题系统 / 静态资源嵌入
+- `internal/agent` — 指标采集（gopsutil）与上报循环（参数集对齐 komari-agent）
+- `web_dist` — 原生 HTML/CSS/JS 面板（前台 + 侧边栏管理后台），`go:embed` 打包进二进制
+
+### Komari 兼容 API（供 Komari 生态主题调用）
+
+| 端点 | 说明 |
+| --- | --- |
+| `GET /api/nodes` | 服务器列表（含 price/billing_cycle/expired_at/traffic_limit 与 account 聚合） |
+| `GET /api/public` | 站点公开设置 |
+| `GET /api/version` | 版本信息 |
+| `GET /api/recent/:uuid` | 最近上报记录 |
+| `GET /api/records/load` | 历史负载记录 |
+| `WS /api/clients` | 发送 `get` / `get <uuid>` 拉取实时数据（Komari 拉取协议） |
 
 ## 安全须知
 
@@ -169,10 +185,12 @@ Meerkat 是自托管监控工具，请仅部署在你拥有或获得授权的系
 
 ## Roadmap
 
-- [ ] 告警通知（Webhook / Telegram / 邮件）
+- [x] 通知系统（Telegram / 离线 / 负载 / 到期 / 流量 / 登录）
+- [x] 主题系统（Komari 格式主题上传与切换）
+- [x] 账单与流量管理
 - [ ] Agent 在线终端与文件管理
-- [ ] 主题系统与主题市场
-- [ ] ICMP / TCP 端口拨测
+- [ ] 主题市场（在线目录一键安装）
+- [ ] ICMP / TCP 端口拨测与延迟监测
 - [ ] 服务端多用户与只读分享链接
 
 ## License

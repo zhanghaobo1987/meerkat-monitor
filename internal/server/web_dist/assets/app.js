@@ -181,6 +181,7 @@ function renderGrid() {
   $("#empty").style.display = servers.length ? "none" : "";
   grid.innerHTML = "";
   for (const s of servers) grid.appendChild(cardOf(s));
+  renderBillingBar();
 }
 
 function cardOf(s) {
@@ -192,6 +193,39 @@ function cardOf(s) {
   const cpuPct = r ? r.cpu_usage : 0;
   const memPct = r && r.mem_total ? ((r.mem_used / r.mem_total) * 100) : 0;
   const diskPct = r && r.disk_total ? ((r.disk_used / r.disk_total) * 100) : 0;
+  // 账单标签
+  const b = s.billing || {};
+  let bills = "";
+  if (b.price > 0 || (b.billing_cycle && b.billing_cycle !== "none")) {
+    const priceStr = b.price > 0 ? `${b.currency || "$"}${b.price}` : "免费";
+    const cyc = b.price > 0 ? "/" + ({ monthly: "月", quarterly: "季", semiannual: "半年", yearly: "年" }[b.billing_cycle] || "月") : "";
+    bills += `<span class="bill-chip bill-price">${esc(priceStr)}${cyc}</span>`;
+  }
+  if (b.expired_at > 0) {
+    const d = Math.floor((b.expired_at * 1000 - Date.now()) / 86400000);
+    if (d < 0) bills += `<span class="bill-chip bill-expired">已到期</span>`;
+    else if (d <= 30) bills += `<span class="bill-chip" style="background:#fef3c7;color:#b45309">余${d}天</span>`;
+    else bills += `<span class="bill-chip bill-days">余${d}天</span>`;
+  } else if (b.billing_cycle && b.billing_cycle !== "none") {
+    bills += `<span class="bill-chip bill-days">长期</span>`;
+  }
+  if (s.region) bills += `<span class="bill-chip bill-region">${esc(s.region)}</span>`;
+  // 流量条
+  let trafficLine = "";
+  if (b.traffic_limit > 0) {
+    const pct = Math.min(100, (b.traffic_used / b.traffic_limit) * 100);
+    const tColor = pct >= 95 ? "#ef4444" : pct >= 80 ? "#f59e0b" : "#2563eb";
+    trafficLine = `
+    <div style="margin-top:10px">
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-3);margin-bottom:3px">
+        <span>📶 本月流量 ${fmtBytes(b.traffic_used, 1)} / ${fmtBytes(b.traffic_limit, 1)}</span>
+        <span style="color:${tColor};font-weight:600">${pct.toFixed(1)}%</span>
+      </div>
+      <div style="height:6px;background:var(--bg);border-radius:6px;overflow:hidden">
+        <div style="height:100%;width:${pct.toFixed(1)}%;background:${tColor};border-radius:6px"></div>
+      </div>
+    </div>`;
+  }
   el.innerHTML = `
     <div class="card-head">
       <span class="dot ${s.online ? "on" : "off"}"></span>
@@ -209,17 +243,46 @@ function cardOf(s) {
       <div class="n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="down"><path d="M12 4v12m0 0 5-5m-5 5-5-5M5 20h14"/></svg><b>${r ? fmtBytesSpeed(r.net_in) : "-"}</b></div>
       <div class="n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#10b981"><path d="M12 20V8m0 0 5 5m-5-5-5 5M5 4h14"/></svg><b>${r ? fmtBytesSpeed(r.net_out) : "-"}</b></div>
     </div>
+    ${trafficLine}
     <div class="footline">
       <span>⏱ ${s.online ? fmtUptime(r ? r.uptime : 0) : "离线"}</span>
-      ${r ? `<span>⇅ ${fmtBytes(r.net_total_in, 0)} / ${fmtBytes(r.net_total_out, 0)}</span>` : ""}
+      ${r && r.ipv4 ? `<span>🌐 ${esc(r.ipv4)}</span>` : ""}
       ${r && r.tcp_conns != null ? `<span>⇄ TCP ${r.tcp_conns}</span>` : ""}
-    </div>`;
+    </div>
+    ${bills ? `<div style="margin-top:8px">${bills}</div>` : ""}`;
   const canvases = el.querySelectorAll("canvas");
   drawRing(canvases[0], cpuPct, ringColor(cpuPct));
   drawRing(canvases[1], memPct, "#8b5cf6");
   drawRing(canvases[2], diskPct, "#0ea5e9");
   el.addEventListener("click", () => openDetail(s.uuid));
   return el;
+}
+
+/* 账单汇总条 */
+function renderBillingBar() {
+  const bar = $("#billingBar");
+  if (!bar) return;
+  const withBill = servers.filter((s) => (s.billing && (s.billing.price > 0 || s.billing.expired_at > 0 || s.billing.traffic_limit > 0)));
+  if (!withBill.length) { bar.style.display = "none"; return; }
+  bar.style.display = "";
+  const bOf = (s) => s.billing;
+  const totalCost = withBill.reduce((acc, s) => {
+    const b = bOf(s);
+    if (!b.price) return acc;
+    const perMonth = { monthly: b.price, quarterly: b.price / 3, semiannual: b.price / 6, yearly: b.price / 12, none: 0 }[b.billing_cycle] || 0;
+    return acc + perMonth;
+  }, 0);
+  const cur = withBill.find((s) => bOf(s).price > 0)?.billing.currency || "$";
+  const totalTraffic = withBill.reduce((a, s) => a + (bOf(s).traffic_limit > 0 ? bOf(s).traffic_limit : 0), 0);
+  const usedTraffic = withBill.reduce((a, s) => a + (bOf(s).traffic_used > 0 ? bOf(s).traffic_used : 0), 0);
+  const expiring = withBill.filter((s) => {
+    const d = bOf(s).expired_at ? Math.floor((bOf(s).expired_at * 1000 - Date.now()) / 86400000) : null;
+    return d !== null && d <= 30;
+  });
+  $("#billingCards").innerHTML = `
+    <div class="stat-card"><div class="t">💰 月均费用</div><div class="v">${cur}${totalCost.toFixed(2)}</div></div>
+    <div class="stat-card"><div class="t">📶 流量用量</div><div class="v" style="font-size:18px">${fmtBytes(usedTraffic, 1)} <small>/ ${fmtBytes(totalTraffic, 1)}</small></div></div>
+    <div class="stat-card"><div class="t">⏰ 30 天内到期</div><div class="v" style="font-size:16px">${expiring.length ? expiring.map((s) => esc(s.name)).join("、") : "无"}</div></div>`;
 }
 
 function esc(s) {

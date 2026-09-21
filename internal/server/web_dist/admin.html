@@ -9,80 +9,314 @@
 <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-<header class="topbar">
-  <div class="topbar-inner">
-    <a class="logo" href="/">
+<div class="admin-layout" id="adminLayout" style="display:none">
+  <!-- 侧边栏 -->
+  <aside class="sidebar">
+    <div class="brand">
       <svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="12" fill="#2563eb"/><circle cx="16.5" cy="20" r="4.5" fill="#fff"/><circle cx="31.5" cy="20" r="4.5" fill="#fff"/><circle cx="18" cy="21.2" r="2" fill="#0f172a"/><circle cx="33" cy="21.2" r="2" fill="#0f172a"/><path d="M17 31c3.5 3.4 10.5 3.4 14 0" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M11 12.5 16.5 16M37 12.5 31.5 16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
       <span id="siteName">Meerkat</span>
-    </a>
-    <div class="spacer"></div>
-    <div class="meta" id="adminMeta" style="display:none">
-      <a href="/" >返回面板</a>
-      <a href="#" id="btnLogout">退出登录</a>
     </div>
-  </div>
-</header>
-
-<main class="container">
-  <!-- 登录 -->
-  <div id="loginView" class="login-wrap">
-    <div class="login-card">
-      <h2><svg viewBox="0 0 48 48" fill="none" style="width:28px;height:28px"><rect width="48" height="48" rx="12" fill="#2563eb"/><circle cx="16.5" cy="20" r="4.5" fill="#fff"/><circle cx="31.5" cy="20" r="4.5" fill="#fff"/><circle cx="18" cy="21.2" r="2" fill="#0f172a"/><circle cx="33" cy="21.2" r="2" fill="#0f172a"/><path d="M17 31c3.5 3.4 10.5 3.4 14 0" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M11 12.5 16.5 16M37 12.5 31.5 16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>登录管理后台</h2>
-      <p class="sub">首次部署的账号密码在服务端启动日志中</p>
-      <form id="loginForm">
-        <label class="f"><span>用户名</span><input type="text" id="loginUser" autocomplete="username" required></label>
-        <label class="f"><span>密码</span><input type="password" id="loginPass" autocomplete="current-password" required></label>
-        <button class="btn primary" style="width:100%;justify-content:center" type="submit">登 录</button>
-      </form>
+    <div class="nav-group">
+      <div class="nav-item" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        仪表盘
+      </div>
+      <div class="nav-item" data-page="servers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>
+        服务器
+      </div>
+      <div class="nav-item has-sub" data-sub="subTheme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18c1.5 0 2-1 2-2s-1-1.5-1-3 1-2 3-2 3 1.3 3 3"/><circle cx="8" cy="10" r="1" fill="currentColor"/><circle cx="11" cy="7" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/></svg>
+        主题 <span class="arrow">▶</span>
+      </div>
+      <div class="nav-sub" id="subTheme">
+        <div class="nav-item" data-page="themes">主题管理</div>
+      </div>
+      <div class="nav-item has-sub" data-sub="subNotify">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        通知 <span class="arrow">▶</span>
+      </div>
+      <div class="nav-sub" id="subNotify">
+        <div class="nav-item" data-page="notify-channel">通知渠道</div>
+        <div class="nav-item" data-page="notify-offline">离线通知</div>
+        <div class="nav-item" data-page="notify-load">负载通知</div>
+        <div class="nav-item" data-page="notify-general">通用设置</div>
+      </div>
+      <div class="nav-item has-sub" data-sub="subSettings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        设置 <span class="arrow">▶</span>
+      </div>
+      <div class="nav-sub" id="subSettings">
+        <div class="nav-item" data-page="settings">站点设置</div>
+      </div>
     </div>
-  </div>
-
-  <!-- 管理主界面 -->
-  <div id="adminView" style="display:none">
-    <div class="section">
-      <h3>服务器列表
-        <span class="right"><button class="btn primary" id="btnAdd">+ 添加服务器</button></span>
-      </h3>
-      <table class="tbl">
-        <thead><tr>
-          <th>状态</th><th>名称</th><th>备注</th><th>标签</th><th>系统</th><th>接入令牌</th><th style="width:150px">操作</th>
-        </tr></thead>
-        <tbody id="srvRows"><tr><td colspan="7" style="color:#94a3b8">加载中…</td></tr></tbody>
-      </table>
+    <div style="position:absolute;bottom:14px;left:10px;right:10px">
+      <div style="display:flex;gap:6px">
+        <a class="btn sm" href="/" style="flex:1;justify-content:center;text-decoration:none">前台</a>
+        <button class="btn sm" id="btnLogout" style="flex:1;justify-content:center">退出</button>
+      </div>
     </div>
+  </aside>
 
-    <div class="section">
-      <h3>站点设置</h3>
-      <div style="max-width:420px">
+  <!-- 主内容 -->
+  <main class="admin-main">
+
+    <!-- 仪表盘 -->
+    <section class="page" id="page-dashboard">
+      <h2>仪表板</h2>
+      <p class="sub">愿每一台服务器都稳定运行，一切尽在掌握</p>
+      <div class="stat-cards">
+        <div class="stat-card">
+          <div class="t">🟢 在线状态</div>
+          <div class="v" id="dashOnline">- / -</div>
+          <div class="warn" id="dashOfflineWarn" style="display:none"></div>
+        </div>
+        <div class="stat-card">
+          <div class="t">💾 数据库占用</div>
+          <div class="v" id="dashDB">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="t">⏰ 到期提醒</div>
+          <div class="v" style="font-size:15px" id="dashExpiring">加载中…</div>
+        </div>
+      </div>
+      <div class="section">
+        <h3>最近 24 小时流量</h3>
+        <canvas id="dashTrafficChart" class="chart-lg"></canvas>
+      </div>
+      <div class="dash-grid">
+        <div class="section"><h3>流量消耗 Top5</h3><div id="rankTraffic"></div></div>
+        <div class="section"><h3>平均 CPU 占用</h3><div id="rankCPU"></div></div>
+        <div class="section"><h3>平均内存占用</h3><div id="rankMem"></div></div>
+      </div>
+    </section>
+
+    <!-- 服务器 -->
+    <section class="page" id="page-servers">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+        <h2 style="margin:0">节点列表</h2>
+        <div style="flex:1"></div>
+        <input type="text" id="srvSearch" placeholder="查找服务器" style="max-width:220px">
+        <button class="btn primary" id="btnAdd">+ 添加节点</button>
+      </div>
+      <p class="sub">共 <span id="srvCount">0</span> 台服务器</p>
+      <div class="section" style="padding:0;overflow-x:auto">
+        <table class="tbl" style="min-width:900px">
+          <thead><tr>
+            <th style="width:30px"></th><th>名称</th><th>IP 地址</th><th>客户端版本</th><th>分组</th><th>私有备注</th><th>账单</th><th style="width:210px">操作</th>
+          </tr></thead>
+          <tbody id="srvRows"><tr><td colspan="8" style="color:#94a3b8">加载中…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 主题管理 -->
+    <section class="page" id="page-themes">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+        <h2 style="margin:0">主题管理</h2>
+        <div style="flex:1"></div>
+        <label class="btn primary" style="cursor:pointer">
+          ⬆ 上传主题（ZIP）
+          <input type="file" id="themeUpload" accept=".zip" style="display:none">
+        </label>
+      </div>
+      <p class="sub">支持 Komari 主题格式（komari-theme.json + dist/），如 LuminaPlus、Emerald、Glass 等</p>
+      <div id="themeGrid" class="theme-grid"></div>
+      <div class="section" style="margin-top:16px">
+        <h3>如何获取主题？</h3>
+        <p style="font-size:13px;color:var(--text-2);line-height:1.8">
+          从 GitHub 下载主题 Release 的 ZIP 包（如 <a href="https://github.com/shanyang242/Komari-Theme-LuminaPlus" target="_blank" rel="noopener">Komari-Theme-LuminaPlus</a>），
+          点击右上角「上传主题」即可安装。主题包内需包含 <code>komari-theme.json</code> 清单与 <code>dist/</code> 构建产物。
+          激活后前台页面将切换为主题渲染，数据通过 Komari 兼容 API（/api/nodes 等）提供。
+        </p>
+      </div>
+    </section>
+
+    <!-- 通知渠道 -->
+    <section class="page" id="page-notify-channel">
+      <h2>通知设置</h2>
+      <p class="sub">通过首选方式获取及时通知</p>
+      <div class="section">
+        <div class="set-line">
+          <div class="desc"><b>开启通知</b><span>启用后，各类事件将按渠道推送</span></div>
+          <label class="switch"><input type="checkbox" id="nsEnabled"><span class="sl"></span></label>
+        </div>
+      </div>
+      <div class="section">
+        <h3>消息通知模板</h3>
+        <p class="sub" style="margin-bottom:10px">支持变量：{{emoji}} {{event}} {{client}} {{detail}}</p>
+        <textarea id="nsTpl" rows="4" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px"></textarea>
+        <button class="btn primary" id="btnSaveNotify" style="margin-top:10px">保存</button>
+      </div>
+      <div class="section">
+        <h3>通知渠道</h3>
+        <label class="f" style="max-width:260px;margin-top:8px"><span>平台</span>
+          <select id="nsChannel"><option value="telegram">telegram</option><option value="none">none</option></select>
+        </label>
+        <h3 style="margin-top:8px">发送设置（Telegram）</h3>
+        <div style="max-width:520px">
+          <label class="f"><span>Telegram Bot Token *</span><input type="text" id="nsBotToken" placeholder="123456:ABC-DEF..."></label>
+          <label class="f"><span>Chat ID *</span><input type="text" id="nsChatID" placeholder="8243614065"></label>
+          <label class="f"><span>message_thread_id</span><input type="text" id="nsThreadID" placeholder="可选，仅超级群组话题"><small style="color:var(--text-3);font-size:11.5px">Optional. Unique identifier of a message thread; for supergroups only</small></label>
+          <label class="f"><span>请求端点 *</span><input type="text" id="nsEndpoint" value="https://api.telegram.org/bot"><small style="color:var(--text-3);font-size:11.5px">Telegram Bot API 的请求端点</small></label>
+          <button class="btn primary" id="btnSaveNotify2">保存</button>
+        </div>
+      </div>
+      <div class="section">
+        <h3>发送测试消息</h3>
+        <button class="btn primary" id="btnTestNotify" style="background:#1e3a8a">GO</button>
+      </div>
+    </section>
+
+    <!-- 离线通知 -->
+    <section class="page" id="page-notify-offline">
+      <h2>离线通知设置</h2>
+      <p class="sub">客户端离线后，若在宽限期内未重新上线，则发送离线通知（30 分钟内不重复发送）</p>
+      <div class="section" style="padding:0;overflow-x:auto">
+        <table class="tbl" style="min-width:640px">
+          <thead><tr><th>服务器</th><th>状态</th><th>宽限期</th><th>最后通知</th><th style="width:80px">操作</th></tr></thead>
+          <tbody id="offlineRows"><tr><td colspan="5" style="color:#94a3b8">加载中…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 负载通知 -->
+    <section class="page" id="page-notify-load">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+        <h2 style="margin:0">负载通知</h2>
+        <div style="flex:1"></div>
+        <button class="btn primary" id="btnAddRule">+ 添加</button>
+      </div>
+      <p class="sub">按规则监控 CPU / 内存使用率，达到阈值并满足时间占比后推送通知</p>
+      <div class="section" style="padding:0;overflow-x:auto">
+        <table class="tbl" style="min-width:760px">
+          <thead><tr><th>名称</th><th>服务器</th><th>监控项</th><th>阈值</th><th>时间占比</th><th>间隔</th><th style="width:100px">操作</th></tr></thead>
+          <tbody id="ruleRows"><tr><td colspan="7" style="color:#94a3b8">暂无规则</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 通知通用 -->
+    <section class="page" id="page-notify-general">
+      <h2>通知 · 通用</h2>
+      <p class="sub">过期提醒、登录通知与流量用量</p>
+      <div class="section">
+        <h3>过期提醒</h3>
+        <div class="set-line">
+          <div class="desc"><b>启用过期提醒</b><span>启用后，将在到期前发送提醒通知</span></div>
+          <label class="switch"><input type="checkbox" id="nsExpiryEnabled"><span class="sl"></span></label>
+        </div>
+        <div class="set-line">
+          <div class="desc"><b>提前提醒天数</b><span>在到期前多少天开始发送提醒</span></div>
+          <input type="number" id="nsExpiryDays" min="1" max="90" style="width:90px" value="10">
+        </div>
+      </div>
+      <div class="section">
+        <h3>登录通知</h3>
+        <div class="set-line">
+          <div class="desc"><b>登录通知</b><span>当有新的会话登录到面板时，向您发送通知</span></div>
+          <label class="switch"><input type="checkbox" id="nsLoginEnabled"><span class="sl"></span></label>
+        </div>
+      </div>
+      <div class="section">
+        <h3>流量用量</h3>
+        <p style="font-size:12.5px;color:var(--text-3);margin-bottom:10px">当服务器流量使用达到指定百分比时发送通知，并以 5% 为梯度持续提醒。未设置流量额度的服务器不发送通知，设为 0 禁用。</p>
+        <div class="set-line">
+          <div class="desc"><b>提醒阈值（%）</b><span>默认 80</span></div>
+          <input type="number" id="nsTrafficPct" min="0" max="100" style="width:90px" value="80">
+        </div>
+      </div>
+      <button class="btn primary" id="btnSaveNotifyGeneral">保存全部通用设置</button>
+    </section>
+
+    <!-- 站点设置 -->
+    <section class="page" id="page-settings">
+      <h2>站点设置</h2>
+      <p class="sub">站点基础配置</p>
+      <div class="section" style="max-width:520px">
         <label class="f"><span>站点名称</span><input type="text" id="setName"></label>
         <label class="f"><span>Agent 上报间隔（秒）</span><input type="number" id="setInterval" min="1" max="60"></label>
         <label class="f"><span>历史数据保留（天）</span><input type="number" id="setKeep" min="1" max="365"></label>
         <button class="btn primary" id="btnSaveSettings">保存设置</button>
       </div>
-    </div>
-
-    <div class="section">
-      <h3>修改管理密码</h3>
-      <div style="max-width:420px">
+      <div class="section" style="max-width:520px">
+        <h3>修改管理密码</h3>
         <label class="f"><span>旧密码</span><input type="password" id="pwOld" autocomplete="current-password"></label>
         <label class="f"><span>新密码（至少 6 位）</span><input type="password" id="pwNew" autocomplete="new-password"></label>
         <button class="btn primary" id="btnChangePw">修改密码</button>
       </div>
-    </div>
-  </div>
-</main>
+    </section>
+  </main>
+</div>
 
-<!-- 新增/编辑弹层 -->
+<!-- 登录 -->
+<div id="loginView" class="login-wrap">
+  <div class="login-card">
+    <h2><svg viewBox="0 0 48 48" fill="none" style="width:28px;height:28px"><rect width="48" height="48" rx="12" fill="#2563eb"/><circle cx="16.5" cy="20" r="4.5" fill="#fff"/><circle cx="31.5" cy="20" r="4.5" fill="#fff"/><circle cx="18" cy="21.2" r="2" fill="#0f172a"/><circle cx="33" cy="21.2" r="2" fill="#0f172a"/><path d="M17 31c3.5 3.4 10.5 3.4 14 0" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M11 12.5 16.5 16M37 12.5 31.5 16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>登录管理后台</h2>
+    <p class="sub">首次部署的账号密码在服务端启动日志中</p>
+    <form id="loginForm">
+      <label class="f"><span>用户名</span><input type="text" id="loginUser" autocomplete="username" required></label>
+      <label class="f"><span>密码</span><input type="password" id="loginPass" autocomplete="current-password" required></label>
+      <button class="btn primary" style="width:100%;justify-content:center" type="submit">登 录</button>
+    </form>
+  </div>
+</div>
+
+<!-- 服务器编辑弹层 -->
 <div class="modal-mask" id="srvMask">
-  <div class="modal" style="max-width:520px">
+  <div class="modal" style="max-width:560px">
     <div class="modal-head"><span class="title" id="srvModalTitle">添加服务器</span><button class="close" id="srvClose">✕</button></div>
     <div class="modal-body">
       <div id="srvForm">
-        <label class="f"><span>名称 *</span><input type="text" id="fName" placeholder="例如：HK-01"></label>
-        <label class="f"><span>备注</span><input type="text" id="fNote" placeholder="可选"></label>
-        <label class="f"><span>标签</span><input type="text" id="fTag" placeholder="例如：香港 / 生产环境"></label>
-        <div id="fEditRow" style="display:none">
-          <label class="f"><span>排序权重（小的在前）</span><input type="number" id="fOrder"></label>
+        <label class="f"><span>名称 *</span><input type="text" id="fName" placeholder="例如：DMIT.LAX"></label>
+        <div class="form-row">
+          <label class="f"><span>分组</span><input type="text" id="fGroup" placeholder="例如：洛杉矶"></label>
+          <label class="f"><span>地区</span><input type="text" id="fRegion" placeholder="例如：美国"></label>
+        </div>
+        <label class="f"><span>标签</span><input type="text" id="fTag" placeholder="多个用分号分隔"></label>
+        <label class="f"><span>私有备注</span><input type="text" id="fNote" placeholder="仅管理员可见"></label>
+
+        <h4 style="font-size:13.5px;margin:14px 0 10px;color:var(--text-2)">💰 账单信息</h4>
+        <div class="form-row">
+          <label class="f"><span>费用</span><input type="number" id="fPrice" step="0.01" min="0" placeholder="49.9"></label>
+          <label class="f"><span>货币</span>
+            <select id="fCurrency"><option value="$">$</option><option value="¥">¥</option><option value="€">€</option></select>
+          </label>
+          <label class="f"><span>费用周期</span>
+            <select id="fCycle">
+              <option value="none">一次性 / 免费</option>
+              <option value="monthly">每月</option>
+              <option value="quarterly">每季</option>
+              <option value="semiannual">每半年</option>
+              <option value="yearly">每年</option>
+            </select>
+          </label>
+        </div>
+        <label class="f"><span>到期时间</span><input type="date" id="fExpired"><small style="color:var(--text-3);font-size:11.5px">留空表示长期有效</small></label>
+
+        <h4 style="font-size:13.5px;margin:14px 0 10px;color:var(--text-2)">📶 流量设置</h4>
+        <div class="form-row">
+          <label class="f"><span>流量总额（GB）</span><input type="number" id="fTraffic" step="0.1" min="0" placeholder="0 = 不限"></label>
+          <label class="f"><span>统计方式</span>
+            <select id="fTrafficType">
+              <option value="sum">上下行合计</option>
+              <option value="up">仅上行</option>
+              <option value="down">仅下行</option>
+            </select>
+          </label>
+        </div>
+        <p style="font-size:12px;color:var(--text-3);margin-bottom:12px">已用流量按月自动统计（每月 1 日重置基准），无需手动填写</p>
+
+        <h4 style="font-size:13.5px;margin:14px 0 10px;color:var(--text-2)">🔔 离线通知</h4>
+        <div class="set-line" style="border:none;padding:4px 0">
+          <div class="desc"><b>启用离线通知</b></div>
+          <label class="switch"><input type="checkbox" id="fOfflineNotify" checked><span class="sl"></span></label>
+        </div>
+        <label class="f"><span>宽限期（秒）</span><input type="number" id="fGrace" min="30" value="60"></label>
+        <label class="f"><span>排序权重（小的在前）</span><input type="number" id="fOrder" value="0"></label>
+        <div class="set-line" style="border:none;padding:4px 0;margin-bottom:8px">
+          <div class="desc"><b>隐藏节点</b><span>不在前台展示（仅管理员可见）</span></div>
+          <label class="switch"><input type="checkbox" id="fHidden"><span class="sl"></span></label>
         </div>
         <button class="btn primary" id="btnSrvSave" style="width:100%;justify-content:center">保 存</button>
       </div>
@@ -95,6 +329,26 @@
         <div class="code-block" id="agentRunCmd"></div>
         <button class="btn primary" id="btnSrvDone" style="width:100%;justify-content:center">完 成</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- 负载规则弹层 -->
+<div class="modal-mask" id="ruleMask">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head"><span class="title" id="ruleModalTitle">添加负载通知规则</span><button class="close" id="ruleClose">✕</button></div>
+    <div class="modal-body">
+      <label class="f"><span>规则名称 *</span><input type="text" id="rName" placeholder="例如：CPU 使用超过 80%"></label>
+      <label class="f"><span>目标服务器</span><select id="rServer"></select></label>
+      <label class="f"><span>监控项</span>
+        <select id="rMetric"><option value="cpu">CPU</option><option value="ram">RAM</option></select>
+      </label>
+      <div class="form-row">
+        <label class="f"><span>阈值（%）</span><input type="number" id="rThreshold" min="1" max="100" value="80"></label>
+        <label class="f"><span>时间占比（0-1）</span><input type="number" id="rRatio" min="0.1" max="1" step="0.1" value="0.8"></label>
+        <label class="f"><span>间隔（分钟）</span><input type="number" id="rInterval" min="1" value="2"></label>
+      </div>
+      <button class="btn primary" id="btnRuleSave" style="width:100%;justify-content:center">保 存</button>
     </div>
   </div>
 </div>
