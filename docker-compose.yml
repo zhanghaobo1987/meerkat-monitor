@@ -1,0 +1,11 @@
+services:
+  meerkat:
+    build: .
+    container_name: meerkat
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    # 如需使用官方镜像（发布后可用）：
+    # image: ghcr.io/meerkat-monitor/meerkat:latest

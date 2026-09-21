@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Meerkat · 管理后台</title>
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="logo" href="/">
+      <svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="12" fill="#2563eb"/><circle cx="16.5" cy="20" r="4.5" fill="#fff"/><circle cx="31.5" cy="20" r="4.5" fill="#fff"/><circle cx="18" cy="21.2" r="2" fill="#0f172a"/><circle cx="33" cy="21.2" r="2" fill="#0f172a"/><path d="M17 31c3.5 3.4 10.5 3.4 14 0" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M11 12.5 16.5 16M37 12.5 31.5 16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+      <span id="siteName">Meerkat</span>
+    </a>
+    <div class="spacer"></div>
+    <div class="meta" id="adminMeta" style="display:none">
+      <a href="/" >返回面板</a>
+      <a href="#" id="btnLogout">退出登录</a>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <!-- 登录 -->
+  <div id="loginView" class="login-wrap">
+    <div class="login-card">
+      <h2><svg viewBox="0 0 48 48" fill="none" style="width:28px;height:28px"><rect width="48" height="48" rx="12" fill="#2563eb"/><circle cx="16.5" cy="20" r="4.5" fill="#fff"/><circle cx="31.5" cy="20" r="4.5" fill="#fff"/><circle cx="18" cy="21.2" r="2" fill="#0f172a"/><circle cx="33" cy="21.2" r="2" fill="#0f172a"/><path d="M17 31c3.5 3.4 10.5 3.4 14 0" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M11 12.5 16.5 16M37 12.5 31.5 16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>登录管理后台</h2>
+      <p class="sub">首次部署的账号密码在服务端启动日志中</p>
+      <form id="loginForm">
+        <label class="f"><span>用户名</span><input type="text" id="loginUser" autocomplete="username" required></label>
+        <label class="f"><span>密码</span><input type="password" id="loginPass" autocomplete="current-password" required></label>
+        <button class="btn primary" style="width:100%;justify-content:center" type="submit">登 录</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 管理主界面 -->
+  <div id="adminView" style="display:none">
+    <div class="section">
+      <h3>服务器列表
+        <span class="right"><button class="btn primary" id="btnAdd">+ 添加服务器</button></span>
+      </h3>
+      <table class="tbl">
+        <thead><tr>
+          <th>状态</th><th>名称</th><th>备注</th><th>标签</th><th>系统</th><th>接入令牌</th><th style="width:150px">操作</th>
+        </tr></thead>
+        <tbody id="srvRows"><tr><td colspan="7" style="color:#94a3b8">加载中…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3>站点设置</h3>
+      <div style="max-width:420px">
+        <label class="f"><span>站点名称</span><input type="text" id="setName"></label>
+        <label class="f"><span>Agent 上报间隔（秒）</span><input type="number" id="setInterval" min="1" max="60"></label>
+        <label class="f"><span>历史数据保留（天）</span><input type="number" id="setKeep" min="1" max="365"></label>
+        <button class="btn primary" id="btnSaveSettings">保存设置</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>修改管理密码</h3>
+      <div style="max-width:420px">
+        <label class="f"><span>旧密码</span><input type="password" id="pwOld" autocomplete="current-password"></label>
+        <label class="f"><span>新密码（至少 6 位）</span><input type="password" id="pwNew" autocomplete="new-password"></label>
+        <button class="btn primary" id="btnChangePw">修改密码</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- 新增/编辑弹层 -->
+<div class="modal-mask" id="srvMask">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head"><span class="title" id="srvModalTitle">添加服务器</span><button class="close" id="srvClose">✕</button></div>
+    <div class="modal-body">
+      <div id="srvForm">
+        <label class="f"><span>名称 *</span><input type="text" id="fName" placeholder="例如：HK-01"></label>
+        <label class="f"><span>备注</span><input type="text" id="fNote" placeholder="可选"></label>
+        <label class="f"><span>标签</span><input type="text" id="fTag" placeholder="例如：香港 / 生产环境"></label>
+        <div id="fEditRow" style="display:none">
+          <label class="f"><span>排序权重（小的在前）</span><input type="number" id="fOrder"></label>
+        </div>
+        <button class="btn primary" id="btnSrvSave" style="width:100%;justify-content:center">保 存</button>
+      </div>
+      <div id="srvCreated" style="display:none">
+        <div class="notice">服务器创建成功！接入令牌只在此完整展示，请立即复制保存。</div>
+        <div class="code-block mono" id="newToken"></div>
+        <h4 style="font-size:13.5px;margin-bottom:6px">在目标服务器上安装 Agent（一键脚本）：</h4>
+        <div class="code-block" id="agentInstallCmd"></div>
+        <h4 style="font-size:13.5px;margin-bottom:6px">或手动运行：</h4>
+        <div class="code-block" id="agentRunCmd"></div>
+        <button class="btn primary" id="btnSrvDone" style="width:100%;justify-content:center">完 成</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/assets/admin.js"></script>
+</body>
+</html>

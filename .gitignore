@@ -1,0 +1,23 @@
+# Binaries
+meerkat
+meerkat-server
+meerkat-agent
+*.exe
+*.dylib
+*.so
+/dist/
+
+# Data
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

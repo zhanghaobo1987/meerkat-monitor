@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Meerkat · 服务器监控</title>
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="logo" href="/">
+      <svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="12" fill="#2563eb"/><circle cx="16.5" cy="20" r="4.5" fill="#fff"/><circle cx="31.5" cy="20" r="4.5" fill="#fff"/><circle cx="18" cy="21.2" r="2" fill="#0f172a"/><circle cx="33" cy="21.2" r="2" fill="#0f172a"/><path d="M17 31c3.5 3.4 10.5 3.4 14 0" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M11 12.5 16.5 16M37 12.5 31.5 16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+      <span id="siteName">Meerkat</span>
+    </a>
+    <div class="spacer"></div>
+    <div class="meta">
+      <span id="statOnline" class="badge-count">在线 0</span>
+      <span id="statTotal" class="badge-count" style="background:#f1f5f9;color:#64748b">总计 0</span>
+      <a href="/admin" title="管理后台">管理</a>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div id="grid" class="grid"></div>
+  <div id="empty" class="empty" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>
+    <p>暂无服务器</p>
+    <p class="hint">进入管理后台添加服务器，然后在目标机器上运行 Agent 即可</p>
+  </div>
+</main>
+
+<!-- 详情弹层 -->
+<div class="modal-mask" id="detailMask">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="dot" id="dDot"></span>
+      <span class="title" id="dTitle">服务器</span>
+      <span class="tag-chip" id="dTag" style="display:none"></span>
+      <button class="close" id="dClose" title="关闭">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="charts">
+        <div class="chart-box"><h4>CPU 使用率 <span class="legend"><span><i style="background:#2563eb"></i>%</span></span></h4><canvas id="cCpu"></canvas></div>
+        <div class="chart-box"><h4>内存 <span class="legend"><span><i style="background:#8b5cf6"></i>%</span></span></h4><canvas id="cMem"></canvas></div>
+        <div class="chart-box"><h4>网络 <span class="legend"><span><i style="background:#2563eb"></i>↓ 下载</span><span><i style="background:#10b981"></i>↑ 上传</span></span></h4><canvas id="cNet"></canvas></div>
+        <div class="chart-box"><h4>负载 / TCP 连接 <span class="legend"><span><i style="background:#f59e0b"></i>负载</span><span><i style="background:#ef4444"></i>TCP</span></span></h4><canvas id="cLoad"></canvas></div>
+      </div>
+      <table class="info-table" id="dInfo"></table>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/assets/app.js"></script>
+</body>
+</html>
