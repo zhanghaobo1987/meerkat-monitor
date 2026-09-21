@@ -38,9 +38,21 @@ jobs:
       - name: Build
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          CGO_ENABLED=0 go build -trimpath \
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} CGO_ENABLED=0 go build -trimpath \
             -ldflags "-s -w -X main.version=${VERSION}" \
             -o "output/meerkat_${{ matrix.goos }}_${{ matrix.goarch }}${{ matrix.ext }}" .
+
+      - name: Sanity check binary architecture
+        if: matrix.goos != 'windows'
+        run: |
+          file "output/meerkat_${{ matrix.goos }}_${{ matrix.goarch }}" | tee /dev/stderr | \
+            grep -qi "$(case ${{ matrix.goos }}:${{ matrix.goarch }} in \
+              linux:amd64)  echo 'ELF 64-bit.*x86-64';; \
+              linux:arm64)  echo 'ELF 64-bit.*ARM aarch64';; \
+              linux:arm)    echo 'ELF 32-bit.*ARM';; \
+              darwin:amd64) echo 'Mach-O 64-bit x86_64';; \
+              darwin:arm64) echo 'Mach-O 64-bit arm64';; \
+            esac)"
 
       - name: Package (unix)
         if: matrix.goos != 'windows'

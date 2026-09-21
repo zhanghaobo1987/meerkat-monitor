@@ -122,21 +122,39 @@ gh_curl() {
 }
 
 try_github_download() {
+  # 统一取 Release 元数据（latest 或指定 tag）
   if [ "$VERSION" = "latest" ]; then
-    echo "==> 查询 GitHub 最新版本…"
-    VERSION="$(gh_curl "https://api.github.com/repos/${REPO}/releases/latest" \
-      | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n 1)"
+    _api="https://api.github.com/repos/${REPO}/releases/latest"
+  else
+    _api="https://api.github.com/repos/${REPO}/releases/tags/${VERSION}"
+  fi
+  _json="$(gh_curl --connect-timeout 15 "$_api" 2>/dev/null)" || _json=""
+  if [ -z "$_json" ]; then
+    echo "错误: 无法访问 GitHub API（私有仓库需设置 MEERKAT_GH_TOKEN 环境变量）" >&2
+    return 1
+  fi
+  if [ "$VERSION" = "latest" ]; then
+    VERSION="$(printf '%s' "$_json" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n 1)"
     if [ -z "$VERSION" ] || [ "$VERSION" = "Not Found" ]; then
-      echo "错误: 无法获取最新版本（私有仓库请设置 MEERKAT_GH_TOKEN 环境变量）" >&2
+      echo "错误: 未找到任何 Release（私有仓库请设置 MEERKAT_GH_TOKEN）" >&2
       return 1
     fi
   fi
   echo "==> 版本: ${VERSION}"
 
   _asset="${BIN_NAME}.tar.gz"
-  _url="https://github.com/${REPO}/releases/download/${VERSION}/${_asset}"
-  echo "==> 下载 ${_url}"
-  if ! gh_curl --connect-timeout 15 -o "${TMP}/${_asset}" "$_url"; then
+  # 从 Release 元数据中提取目标资产的 API 地址。
+  # 注意：github.com 的 /releases/download/ 直链不接受 Bearer 认证，
+  # 私有仓库必须走 Assets API + Accept: octet-stream（curl 跨主机重定向会自动剥离认证头）。
+  # name 模式以逗号结尾锚定，避免误匹配 .sha256 等同前缀资产。
+  _asset_url="$(printf '%s' "$_json" | sed -n '/"name": "'"${_asset}"'",/{x;s/.*"\(https:[^"]*\)".*/\1/p;d;}; \|"url": "https://api.github.com/repos/[^"]*/assets/|h')"
+  if [ -z "$_asset_url" ]; then
+    echo "错误: Release ${VERSION} 中未找到资产 ${_asset}" >&2
+    return 1
+  fi
+
+  echo "==> 从 GitHub Release 下载 ${_asset}…"
+  if ! gh_curl --connect-timeout 15 -H "Accept: application/octet-stream" -o "${TMP}/${_asset}" "$_asset_url"; then
     echo "错误: GitHub Release 下载失败（私有仓库需 MEERKAT_GH_TOKEN；或改用面板直传，见 README）" >&2
     return 1
   fi
